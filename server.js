@@ -19,6 +19,9 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy for accurate IP detection behind reverse proxy (Render.com)
+app.set('trust proxy', 1);
+
 // Configure multer for file uploads (support more file types including audio)
 const upload = multer({ 
   storage: multer.memoryStorage(),
