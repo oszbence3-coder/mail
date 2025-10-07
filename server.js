@@ -139,7 +139,9 @@ function connectIMAP(email, password) {
       host: 'imap.gmail.com',
       port: 993,
       tls: true,
-      tlsOptions: { rejectUnauthorized: false }
+      tlsOptions: { rejectUnauthorized: false },
+      connTimeout: 30000, // 30 seconds
+      authTimeout: 30000  // 30 seconds
     });
 
     imap.once('ready', () => resolve(imap));
@@ -260,7 +262,7 @@ async function fetchEmails(email, password, page = 1, limit = 20, folder = 'INBO
                     return b.date - a.date;
                   });
                   resolve({ messages, total: results.length, page, totalPages });
-                }, 1000); // Increased delay to ensure parsing completes
+                }, 3000); // Increased delay to ensure parsing completes
               });
             }
           });
@@ -347,7 +349,7 @@ async function fetchEmails(email, password, page = 1, limit = 20, folder = 'INBO
               return b.date - a.date;
             });
             resolve({ messages, total: results.length, page, totalPages });
-          }, 1000); // Increased delay to ensure parsing completes
+          }, 3000); // Increased delay to ensure parsing completes
         });
       });
     });
@@ -378,7 +380,10 @@ async function fetchSingleEmail(email, password, uid, folder = 'INBOX') {
         
         msg.once('end', async () => {
           try {
-            const parsed = await simpleParser(buffer, { encoding: 'utf-8' });
+            const parsed = await simpleParser(buffer, { 
+              encoding: 'utf-8',
+              timeout: 10000 // 10 seconds timeout for parsing
+            });
             // Sanitize HTML content for safer rendering
             let sanitizedHtml = '';
             if (parsed.html) {
@@ -480,7 +485,7 @@ async function fetchSingleEmail(email, password, uid, folder = 'INBOX') {
               html: ''
             });
           }
-        }, 1000); // Increased delay to ensure parsing completes
+        }, 5000); // Increased delay to ensure parsing completes
       });
     });
   });
@@ -504,7 +509,9 @@ async function sendEmail(email, password, to, subject, body, options = {}) {
     auth: {
       user: email,
       pass: password
-    }
+    },
+    connectionTimeout: 60000, // 60 seconds
+    socketTimeout: 60000     // 60 seconds
   });
 
   const mailOptions = {
