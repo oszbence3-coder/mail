@@ -13,8 +13,12 @@ const { body, validationResult } = require('express-validator');
 const sanitizeHtml = require('sanitize-html');
 const mammoth = require('mammoth');
 const marked = require('marked');
+const { promisify } = require('util');
 // const pdfParse = require('pdf-parse'); // Commented out due to DOMMatrix compatibility issues in Node.js
 require('dotenv').config();
+
+// Promisify simpleParser for async/await usage
+const simpleParserAsync = promisify(simpleParser);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -256,7 +260,7 @@ async function fetchEmails(email, password, page = 1, limit = 20, folder = 'INBO
                     return b.date - a.date;
                   });
                   resolve({ messages, total: results.length, page, totalPages });
-                }, 200);
+                }, 1000); // Increased delay to ensure parsing completes
               });
             }
           });
@@ -343,7 +347,7 @@ async function fetchEmails(email, password, page = 1, limit = 20, folder = 'INBO
               return b.date - a.date;
             });
             resolve({ messages, total: results.length, page, totalPages });
-          }, 200);
+          }, 1000); // Increased delay to ensure parsing completes
         });
       });
     });
