@@ -372,12 +372,9 @@ async function fetchSingleEmail(email, password, uid, folder = 'INBOX') {
           });
         });
         
-        msg.once('end', () => {
-          simpleParser(buffer, { encoding: 'utf-8' }, (err, parsed) => {
-            if (err) {
-              console.error('Parse error:', err);
-              return;
-            }
+        msg.once('end', async () => {
+          try {
+            const parsed = await simpleParser(buffer, { encoding: 'utf-8' });
             // Sanitize HTML content for safer rendering
             let sanitizedHtml = '';
             if (parsed.html) {
@@ -443,7 +440,9 @@ async function fetchSingleEmail(email, password, uid, folder = 'INBOX') {
               text: parsed.text || '',
               html: sanitizedHtml
             };
-          });
+          } catch (parseErr) {
+            console.error('Parse error:', parseErr);
+          }
         });
       });
 
@@ -477,7 +476,7 @@ async function fetchSingleEmail(email, password, uid, folder = 'INBOX') {
               html: ''
             });
           }
-        }, 200); // Increased delay to ensure parsing completes
+        }, 1000); // Increased delay to ensure parsing completes
       });
     });
   });

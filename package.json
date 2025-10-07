@@ -8,7 +8,7 @@
     "dev": "nodemon server.js"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0 <25.0.0"
   },
   "dependencies": {
     "connect-flash": "^0.1.1",
