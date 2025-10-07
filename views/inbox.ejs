@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="/assets/logo.png">
+  <title>Beérkezett üzenetek - Magyar Osu Mapek Email</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body.theme-blue { background: linear-gradient(to right, #111827, #0f172a, #000); }
+    body.theme-green { background: linear-gradient(to right, #064e3b, #065f46, #000); }
+    body.theme-purple { background: linear-gradient(to right, #3b0764, #581c87, #000); }
+    body.theme-pink { background: linear-gradient(to right, #831843, #9d174d, #000); }
+    body.theme-orange { background: linear-gradient(to right, #7c2d12, #9a3412, #000); }
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 256px;
+      right: 0;
+    }
+
+    .particle {
+      position: fixed;
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: float 6s infinite linear;
+      z-index: 1;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+      }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% {
+        transform: translateY(-100px) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    .bg-orb {
+      position: fixed;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+      animation: rotate 20s linear infinite;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .bg-orb:nth-child(2) {
+      width: 150px;
+      height: 150px;
+      animation-duration: 15s;
+      animation-direction: reverse;
+    }
+
+    .bg-orb:nth-child(3) {
+      width: 100px;
+      height: 100px;
+      animation-duration: 25s;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Confetti/Snow effect */
+    .confetti {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      background: linear-gradient(45deg, #60a5fa, #34d399, #f472b6);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: fall 4s linear infinite;
+      z-index: 1;
+      opacity: 0.7;
+    }
+
+    @keyframes fall {
+      0% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      aside {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        width: 80vw;
+        max-width: 320px;
+        z-index: 100;
+        background: rgba(17,24,39,0.98);
+        box-shadow: 2px 0 16px rgba(0,0,0,0.3);
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+      }
+      aside.mobile-open {
+        transform: translateX(0);
+      }
+      .sidebar-backdrop {
+        display: block;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 99;
+      }
+      main {
+        margin-left: 0 !important;
+        padding-bottom: 100px !important;
+      }
+      .email-content {
+        padding: 1rem !important;
+      }
+      footer {
+        left: 0 !important;
+        display: none !important;
+      }
+      .mobile-bottom-nav {
+        display: flex !important;
+      }
+      h1 {
+        font-size: 1.1rem !important;
+      }
+      header .flex.items-center.space-x-4:last-child > select,
+      header .flex.items-center.space-x-4:last-child > .flex {
+        display: none;
+      }
+      table th:first-child,
+      table td:first-child {
+        display: none;
+      }
+      table th, table td {
+        padding: 0.5rem !important;
+        font-size: 0.875rem !important;
+      }
+      /* Mobile table responsive fixes */
+      table {
+        table-layout: fixed;
+        width: 100%;
+      }
+      table td:nth-child(2) {
+        width: 25%;
+      }
+      table td:nth-child(3) {
+        width: 50%;
+        max-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      table td:nth-child(4) {
+        width: 25%;
+        font-size: 0.75rem !important;
+      }
+      /* Ensure text doesn't overflow */
+      table td span,
+      table td div {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+      }
+    }
+
+    /* Mobile Bottom Navigation */
+    .mobile-bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(17,24,39,0.95);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 0.75rem 0;
+      z-index: 50;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .mobile-bottom-nav a,
+    .mobile-bottom-nav button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      color: rgba(255,255,255,0.7);
+      font-size: 0.75rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mobile-bottom-nav a.active,
+    .mobile-bottom-nav a:hover {
+      color: #60a5fa;
+    }
+    .mobile-bottom-nav i {
+      font-size: 1.25rem;
+    }
+  </style>
+</head>
+<body class="theme-blue text-white font-sans min-h-screen flex flex-col transition-colors duration-500">
+
+<div class="bg-orb" style="top: 10%; left: 5%;"></div>
+<div class="bg-orb" style="top: 20%; right: 10%;"></div>
+<div class="bg-orb" style="bottom: 20%; left: 15%;"></div>
+<div id="particles-container"></div>
+
+<header class="sticky top-0 z-50 backdrop-blur-md bg-white/5 border-b border-white/10 shadow-xl py-4 px-6">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <button id="mobileMenuToggle" class="md:hidden text-white text-2xl mr-3 hover:text-blue-400 transition-colors">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="flex items-center space-x-4">
+      <img src="/assets/logo.png" alt="Logo" class="w-10 h-10 rounded-lg">
+      <h1 class="text-3xl font-extrabold tracking-wide bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+        Magyar Osu Mapek Email
+      </h1>
+    </div>
+
+    <div class="flex items-center space-x-4">
+      <!-- Theme selector -->
+      <select id="themeSelector" class="appearance-none px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="blue">Kék</option>
+        <option value="green">Zöld</option>
+        <option value="purple">Lila</option>
+        <option value="pink">Rózsaszín</option>
+        <option value="orange">Narancs</option>
+      </select>
+
+      <div class="flex items-center space-x-3 bg-white/10 backdrop-blur-md px-3 py-2 rounded-xl border border-white/20">
+        <span class="text-white font-semibold"><%= user.displayEmail %></span>
+        <a href="/logout" class="text-red-400 hover:text-red-500 transition" title="Kijelentkezés">
+          <i class="fas fa-sign-out-alt"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="flex-1 flex">
+  <div id="sidebar-backdrop" class="sidebar-backdrop" style="display:none;"></div>
+  <!-- Sidebar Menu -->
+  <aside class="w-64 bg-white/5 backdrop-blur-md border-r border-white/10 p-6">
+    <button id="closeSidebarBtn" class="md:hidden absolute top-4 right-4 text-white text-2xl z-50" style="display:none;"><i class="fas fa-times"></i></button>
+    <div class="mb-6">
+      <a href="/compose" class="block w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 px-6 py-3 rounded-xl font-semibold transition transform hover:scale-105 shadow-lg text-center">
+        <i class="fas fa-pen mr-2"></i>Új üzenet
+      </a>
+    </div>
+    
+    <nav class="space-y-2">
+      <a href="/inbox" class="flex items-center space-x-3 px-4 py-3 rounded-xl transition-all hover-lift <%= folder === 'inbox' ? 'bg-blue-500/20 border border-blue-500/50' : 'hover:bg-white/10' %>">
+        <i class="fas fa-inbox text-xl <%= folder === 'inbox' ? 'text-blue-400' : '' %>"></i>
+        <span class="font-medium">Beérkezett</span>
+        <span id="inbox-badge" class="ml-auto bg-blue-500 text-white text-xs px-2 py-1 rounded-full hidden"></span>
+      </a>
+      
+      <a href="/sent" class="flex items-center space-x-3 px-4 py-3 rounded-xl transition-all hover-lift <%= folder === 'sent' ? 'bg-blue-500/20 border border-blue-500/50' : 'hover:bg-white/10' %>">
+        <i class="fas fa-paper-plane text-xl <%= folder === 'sent' ? 'text-blue-400' : '' %>"></i>
+        <span class="font-medium">Elküldött</span>
+      </a>
+      
+      <a href="/spam" class="flex items-center space-x-3 px-4 py-3 rounded-xl transition-all hover-lift <%= folder === 'spam' ? 'bg-blue-500/20 border border-blue-500/50' : 'hover:bg-white/10' %>">
+        <i class="fas fa-exclamation-triangle text-xl <%= folder === 'spam' ? 'text-blue-400' : '' %>"></i>
+        <span class="font-medium">Spam</span>
+      </a>
+      
+      <a href="/trash" class="flex items-center space-x-3 px-4 py-3 rounded-xl transition-all hover-lift <%= folder === 'trash' ? 'bg-blue-500/20 border border-blue-500/50' : 'hover:bg-white/10' %>">
+        <i class="fas fa-trash text-xl <%= folder === 'trash' ? 'text-blue-400' : '' %>"></i>
+        <span class="font-medium">Kuka</span>
+      </a>
+    </nav>
+    
+    <div class="mt-8 pt-6 border-t border-white/10">
+      <div class="text-sm text-gray-400">
+        <div class="flex items-center justify-between mb-2">
+          <span>Tárhely:</span>
+          <span class="font-semibold">2.4 GB / 15 GB</span>
+        </div>
+        <div class="w-full bg-white/10 rounded-full h-2">
+          <div class="bg-blue-500 h-2 rounded-full" style="width: 16%"></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="flex-1 p-8 pb-32 email-content">
+    <% if (messages.success && messages.success.length) { %>
+      <div class="bg-green-500/20 border border-green-500 text-green-200 px-4 py-3 rounded-xl mb-4">
+        <% messages.success.forEach(msg => { %>
+          <p><i class="fas fa-check-circle mr-2"></i><%= msg %></p>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <% if (messages.error && messages.error.length) { %>
+      <div class="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-xl mb-4">
+        <% messages.error.forEach(msg => { %>
+          <p><i class="fas fa-exclamation-circle mr-2"></i><%= msg %></p>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <!-- Search Form -->
+    <div class="mb-4 animate-fade-in">
+      <form method="GET" action="/<%= folder %>" class="flex gap-2">
+        <input type="text" name="search" value="<%= searchQuery || '' %>" placeholder="Keresés feladó, tárgy vagy tartalom alapján..." class="flex-1 px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        <button type="submit" class="px-6 py-2 bg-blue-500 hover:bg-blue-600 rounded-xl font-semibold transition-all hover:scale-105 shadow-lg">
+          <i class="fas fa-search mr-2"></i>Keresés
+        </button>
+        <% if (searchQuery) { %>
+          <a href="/<%= folder %>" class="px-6 py-2 bg-gray-500 hover:bg-gray-600 rounded-xl font-semibold transition-all hover:scale-105 shadow-lg">
+            <i class="fas fa-times mr-2"></i>Törlés
+          </a>
+        <% } %>
+      </form>
+      <% if (searchQuery) { %>
+        <p class="text-sm text-gray-400 mt-2">
+          <i class="fas fa-info-circle mr-1"></i>Keresési eredmények: "<%= searchQuery %>"
+        </p>
+      <% } %>
+    </div>
+
+    <div class="flex justify-between items-center mb-6 animate-fade-in">
+      <div>
+        <h2 class="text-2xl font-bold">
+          <% if (folder === 'inbox') { %>
+            <i class="fas fa-inbox mr-2"></i>Beérkezett üzenetek
+          <% } else if (folder === 'sent') { %>
+            <i class="fas fa-paper-plane mr-2"></i>Elküldött üzenetek
+          <% } else if (folder === 'spam') { %>
+            <i class="fas fa-exclamation-triangle mr-2"></i>Spam
+          <% } else if (folder === 'trash') { %>
+            <i class="fas fa-trash mr-2"></i>Kuka
+          <% } %>
+        </h2>
+        <p class="text-sm text-gray-400 mt-1">
+          <span id="last-update">Utolsó frissítés: most</span>
+          <button onclick="refreshEmails()" class="ml-4 text-blue-400 hover:text-blue-300 transition-all hover:scale-110">
+            <i class="fas fa-sync-alt"></i> Frissítés
+          </button>
+          <% if (folder === 'trash') { %>
+            <form method="POST" action="/empty-trash" style="display: inline;" onsubmit="return confirm('Biztosan véglegesen törölni akarod az összes levelet a kukából? Ez a művelet nem vonható vissza!')">
+              <button type="submit" class="ml-4 px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg font-semibold transition-all hover:scale-105 shadow-lg">
+                <i class="fas fa-trash-alt mr-2"></i>Kuka ürítése
+              </button>
+            </form>
+          <% } %>
+        </p>
+      </div>
+    </div>
+
+  <% if (messages.length === 0) { %>
+    <div class="text-center py-20 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 animate-scale-in">
+      <i class="fas fa-inbox text-6xl text-gray-500 mb-4"></i>
+      <p class="text-gray-400 text-xl">Nincs üzenet az inbox-ban</p>
+    </div>
+  <% } else { %>
+    <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-2xl overflow-hidden animate-fade-in">
+      <table class="w-full">
+        <thead class="bg-white/5 border-b border-white/20">
+          <tr>
+            <th class="px-4 py-4 text-left text-sm font-semibold uppercase tracking-wider w-16">
+              <i class="fas fa-circle"></i>
+            </th>
+            <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">
+              <i class="fas fa-user mr-2"></i>Feladó
+            </th>
+            <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">
+              <i class="fas fa-envelope mr-2"></i>Tárgy
+            </th>
+            <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">
+              <i class="fas fa-clock mr-2"></i>Dátum
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <% messages.forEach((msg, index) => { %>
+            <tr class="email-row border-b border-white/10 hover:bg-white/5 transition-all hover-lift cursor-pointer <%= msg.isRead ? '' : 'bg-blue-500/10' %>" data-uid="<%= msg.uid %>">
+              <td class="px-4 py-4">
+                <% if (!msg.isRead) { %>
+                  <i class="fas fa-circle text-blue-400 text-xs" title="Olvasatlan"></i>
+                <% } %>
+              </td>
+              <td class="px-6 py-4">
+                <div class="flex items-center space-x-2">
+                  <% if (msg.hasAttachments) { %>
+                    <i class="fas fa-paperclip text-blue-400"></i>
+                  <% } %>
+                  <span class="truncate max-w-xs <%= msg.isRead ? '' : 'font-bold' %>"><%= msg.from %></span>
+                </div>
+              </td>
+              <td class="px-6 py-4 <%= msg.isRead ? '' : 'font-bold' %>">
+                <%= msg.subject %>
+                <% if (msg.snippet) { %>
+                  <div class="text-xs text-gray-400 mt-1 truncate"><%= msg.snippet %></div>
+                <% } else if (msg.text) { %>
+                  <div class="text-xs text-gray-400 mt-1 truncate"><%= msg.text.substring(0, 80) %>...</div>
+                <% } %>
+              </td>
+              <td class="px-6 py-4 text-gray-400 text-sm whitespace-nowrap">
+                <%= msg.dateFormatted %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Pagination -->
+    <% if (totalPages > 1) { %>
+      <div class="mt-6 flex justify-center items-center gap-2">
+        <% if (currentPage > 1) { %>
+          <a href="/inbox?page=<%= currentPage - 1 %>" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition">
+            <i class="fas fa-chevron-left"></i> Előző
+          </a>
+        <% } %>
+        
+        <div class="flex gap-2">
+          <% for(let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) { %>
+            <a href="/inbox?page=<%= i %>" class="px-4 py-2 <%= i === currentPage ? 'bg-blue-500' : 'bg-white/10 hover:bg-white/20' %> rounded-lg transition font-semibold">
+              <%= i %>
+            </a>
+          <% } %>
+        </div>
+        
+        <% if (currentPage < totalPages) { %>
+          <a href="/inbox?page=<%= currentPage + 1 %>" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition">
+            Következő <i class="fas fa-chevron-right"></i>
+          </a>
+        <% } %>
+      </div>
+      
+      <div class="text-center mt-4 text-gray-400 text-sm">
+        <%= currentPage %>. oldal / <%= totalPages %> (Összesen <%= total %> email)
+      </div>
+    <% } %>
+  <% } %>
+  </div>
+</main>
+
+<footer class="backdrop-blur-md bg-white/5 border-t border-white/10 text-center p-3">
+  <p class="text-gray-400 text-sm">©2025 Magyar Osu Mapek Email | Made by Pandor</p>
+</footer>
+
+<!-- Mobile Bottom Navigation -->
+<nav class="mobile-bottom-nav">
+  <a href="/inbox" class="<%= folder === 'inbox' ? 'active' : '' %>">
+    <i class="fas fa-inbox"></i>
+    <span>Inbox</span>
+  </a>
+  <a href="/compose">
+    <i class="fas fa-pen"></i>
+    <span>Írás</span>
+  </a>
+  <button id="mobileMenuBtn" onclick="openSidebar()">
+    <i class="fas fa-bars"></i>
+    <span>Menü</span>
+  </button>
+  <a href="/sent">
+    <i class="fas fa-paper-plane"></i>
+    <span>Elküldött</span>
+  </a>
+  <a href="/logout">
+    <i class="fas fa-sign-out-alt"></i>
+    <span>Kilépés</span>
+  </a>
+</nav>
+
+<script>
+  // Particles
+  const container = document.getElementById('particles-container');
+  for (let i = 0; i < 25; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+    particle.style.left = Math.random() * 100 + '%';
+    particle.style.animationDelay = Math.random() * 6 + 's';
+    particle.style.animationDuration = (Math.random() * 3 + 4) + 's';
+    container.appendChild(particle);
+  }
+
+  // Confetti effect
+  for (let i = 0; i < 15; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.style.left = Math.random() * 100 + '%';
+    confetti.style.animationDelay = Math.random() * 4 + 's';
+    confetti.style.animationDuration = (Math.random() * 2 + 3) + 's';
+    document.body.appendChild(confetti);
+  }
+
+  // Mobile menu toggle
+  const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+  const sidebar = document.querySelector('aside');
+  const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+  const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+
+  function openSidebar() {
+    sidebar.classList.add('mobile-open');
+    if (sidebarBackdrop) sidebarBackdrop.style.display = 'block';
+    if (closeSidebarBtn) closeSidebarBtn.style.display = 'block';
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('mobile-open');
+    if (sidebarBackdrop) sidebarBackdrop.style.display = 'none';
+    if (closeSidebarBtn) closeSidebarBtn.style.display = 'none';
+  }
+
+  if (mobileMenuToggle && sidebar) {
+    mobileMenuToggle.addEventListener('click', openSidebar);
+    if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', closeSidebar);
+    if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 768) closeSidebar();
+    });
+  }
+
+  // Theme management
+  function setTheme(theme) {
+    document.body.className = `theme-${theme} text-white font-sans min-h-screen flex flex-col transition-colors duration-500`;
+    localStorage.setItem("osuTheme", theme);
+  }
+  themeSelector.addEventListener("change", e => setTheme(e.target.value));
+  const savedTheme = localStorage.getItem("osuTheme") || "blue";
+  themeSelector.value = savedTheme;
+  setTheme(savedTheme);
+
+  // Email row click handlers
+  const currentFolder = '<%= folder %>';
+  document.querySelectorAll('.email-row').forEach(row => {
+    row.addEventListener('click', function(e) {
+      const uid = this.getAttribute('data-uid');
+      if (uid) {
+        window.location.href = '/message/' + uid + '?folder=' + currentFolder;
+      }
+    });
+  });
+
+  // Realtime email checking (polling every 30 seconds)
+  let lastEmailCount = Number('<%= total %>');
+  
+  async function checkNewEmails() {
+    try {
+      const response = await fetch(`/api/check-new-emails?folder=${getFolderPath(currentFolder)}&lastCount=${lastEmailCount}`);
+      const data = await response.json();
+      
+      if (data.hasNew && currentFolder === 'inbox') {
+        const badge = document.getElementById('inbox-badge');
+        badge.textContent = data.newCount;
+        badge.classList.remove('hidden');
+        
+        // Show notification
+        showNotification(`${data.newCount} új email érkezett!`);
+      }
+      
+      // Update last check time
+      const now = new Date();
+      document.getElementById('last-update').textContent = `Utolsó frissítés: ${now.toLocaleTimeString('hu-HU')}`;
+    } catch (error) {
+      console.error('Email check error:', error);
+    }
+  }
+  
+  function getFolderPath(folder) {
+    const mapping = {
+      'inbox': 'INBOX',
+      'sent': '[Gmail]/Sent Mail',
+      'spam': '[Gmail]/Spam',
+      'trash': '[Gmail]/Trash'
+    };
+    return mapping[folder] || 'INBOX';
+  }
+  
+  function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-20 right-6 bg-blue-500 text-white px-6 py-4 rounded-xl shadow-2xl z-50 animate-pulse';
+    notification.innerHTML = `<i class="fas fa-envelope mr-2"></i>${message}`;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.remove();
+    }, 5000);
+  }
+  
+  function refreshEmails() {
+    location.reload();
+  }
+  
+  // Start polling
+  if (currentFolder === 'inbox') {
+    setInterval(checkNewEmails, 30000); // Check every 30 seconds
+  }
+</script>
+
+</body>
+</html>

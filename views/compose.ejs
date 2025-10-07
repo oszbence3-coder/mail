@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="/assets/logo.png">
+  <title>Új üzenet - Magyar Osu Mapek Email</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body.theme-blue { background: linear-gradient(to right, #111827, #0f172a, #000); }
+    body.theme-green { background: linear-gradient(to right, #064e3b, #065f46, #000); }
+    body.theme-purple { background: linear-gradient(to right, #3b0764, #581c87, #000); }
+    body.theme-pink { background: linear-gradient(to right, #831843, #9d174d, #000); }
+    body.theme-orange { background: linear-gradient(to right, #7c2d12, #9a3412, #000); }
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+    }
+    
+    /* Mobile Bottom Navigation */
+    .mobile-bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(17,24,39,0.95);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 0.75rem 0;
+      z-index: 50;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .mobile-bottom-nav a,
+    .mobile-bottom-nav button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      color: rgba(255,255,255,0.7);
+      font-size: 0.75rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mobile-bottom-nav a.active,
+    .mobile-bottom-nav a:hover {
+      color: #60a5fa;
+    }
+    .mobile-bottom-nav i {
+      font-size: 1.25rem;
+    }
+    
+    @media (max-width: 768px) {
+      main {
+        padding: 1rem !important;
+        padding-bottom: 100px !important;
+      }
+      footer {
+        display: none !important;
+      }
+      .mobile-bottom-nav {
+        display: flex !important;
+      }
+      h1 {
+        font-size: 1.1rem !important;
+      }
+      header .flex.items-center.space-x-4:last-child > select,
+      header .flex.items-center.space-x-4:last-child > .flex {
+        display: none;
+      }
+      .card, .bg-white\/10 {
+        padding: 1rem !important;
+      }
+      button, .btn {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.875rem !important;
+      }
+    }
+  </style>
+</head>
+<body class="theme-blue text-white font-sans min-h-screen flex flex-col transition-colors duration-500">
+
+<header class="sticky top-0 z-50 backdrop-blur-md bg-white/5 border-b border-white/10 shadow-xl py-4 px-6">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+      <a href="/inbox" class="text-blue-400 hover:text-blue-300 transition">
+        <i class="fas fa-arrow-left text-2xl"></i>
+      </a>
+      <img src="/assets/logo.png" alt="Logo" class="w-10 h-10 rounded-lg">
+      <h1 class="text-3xl font-extrabold tracking-wide bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+        Magyar Osu Mapek Email
+      </h1>
+    </div>
+
+    <div class="flex items-center space-x-4">
+      <select id="themeSelector" class="appearance-none px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="blue">Kék</option>
+        <option value="green">Zöld</option>
+        <option value="purple">Lila</option>
+        <option value="pink">Rózsaszín</option>
+        <option value="orange">Narancs</option>
+      </select>
+
+      <div class="flex items-center space-x-3 bg-white/10 backdrop-blur-md px-3 py-2 rounded-xl border border-white/20">
+        <span class="text-white font-semibold"><%= user.displayEmail %></span>
+        <a href="/logout" class="text-red-400 hover:text-red-500 transition" title="Kijelentkezés">
+          <i class="fas fa-sign-out-alt"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="flex-1 container mx-auto p-8 pb-32">
+  <% if (messages.error && messages.error.length) { %>
+    <div class="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-xl mb-4 animate-fade-in">
+      <% messages.error.forEach(msg => { %>
+        <p><i class="fas fa-exclamation-circle mr-2"></i><%= msg %></p>
+      <% }); %>
+    </div>
+  <% } %>
+
+  <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-2xl p-8 animate-scale-in">
+    <h2 class="text-2xl font-bold mb-6">
+      <i class="fas fa-pen mr-2"></i>
+      <% if (replyTo) { %>
+        Válasz: <%= replyTo.subject %>
+      <% } else if (forward) { %>
+        Továbbítás: <%= forward.subject %>
+      <% } else { %>
+        Új üzenet
+      <% } %>
+    </h2>
+
+    <form method="POST" action="/send" enctype="multipart/form-data">
+      <% if (replyTo) { %>
+        <input type="hidden" name="inReplyTo" value="<%= replyTo.messageId %>">
+        <input type="hidden" name="references" value="<%= replyTo.references || replyTo.messageId %>">
+      <% } %>
+
+      <!-- To field -->
+      <div class="mb-4">
+        <label for="to" class="block text-sm font-medium mb-2">
+          <i class="fas fa-envelope mr-2"></i>Címzett:
+        </label>
+        <input 
+          type="email" 
+          id="to" 
+          name="to" 
+          required
+          value="<%= replyTo ? replyTo.from : '' %>"
+          class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          placeholder="pelda@example.com"
+        >
+      </div>
+
+      <!-- CC field -->
+      <div class="mb-4">
+        <label for="cc" class="block text-sm font-medium mb-2">
+          <i class="fas fa-copy mr-2"></i>Másolat (CC):
+        </label>
+        <input 
+          type="text" 
+          id="cc" 
+          name="cc"
+          class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          placeholder="email1@example.com, email2@example.com"
+        >
+      </div>
+
+      <!-- BCC field -->
+      <div class="mb-4">
+        <label for="bcc" class="block text-sm font-medium mb-2">
+          <i class="fas fa-eye-slash mr-2"></i>Titkos másolat (BCC):
+        </label>
+        <input 
+          type="text" 
+          id="bcc" 
+          name="bcc"
+          class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          placeholder="email@example.com"
+        >
+      </div>
+
+      <!-- Subject field -->
+      <div class="mb-4">
+        <label for="subject" class="block text-sm font-medium mb-2">
+          <i class="fas fa-heading mr-2"></i>Tárgy:
+        </label>
+        <input 
+          type="text" 
+          id="subject" 
+          name="subject"
+          value="<% if (replyTo) { %>Re: <%= replyTo.subject.replace(/^Re:\s*/i, '') %><% } else if (forward) { %>Fwd: <%= forward.subject.replace(/^Fwd:\s*/i, '') %><% } %>"
+          class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          placeholder="Tárgy"
+        >
+      </div>
+
+      <!-- Formatting toolbar -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-2">
+          <i class="fas fa-paint-brush mr-2"></i>Formázás:
+        </label>
+        <div class="flex flex-wrap gap-2 bg-white/5 p-3 rounded-xl border border-white/20">
+          <button type="button" onclick="formatText('bold')" class="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition" title="Félkövér">
+            <i class="fas fa-bold"></i>
+          </button>
+          <button type="button" onclick="formatText('italic')" class="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition" title="Dőlt">
+            <i class="fas fa-italic"></i>
+          </button>
+          <button type="button" onclick="formatText('underline')" class="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition" title="Aláhúzott">
+            <i class="fas fa-underline"></i>
+          </button>
+          <button type="button" onclick="formatText('link')" class="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition" title="Link">
+            <i class="fas fa-link"></i>
+          </button>
+          <button type="button" onclick="formatText('list')" class="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition" title="Lista">
+            <i class="fas fa-list"></i>
+          </button>
+          <button type="button" onclick="formatText('code')" class="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition" title="Kód">
+            <i class="fas fa-code"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Attachments -->
+      <div class="mb-4">
+        <label for="attachments" class="block text-sm font-medium mb-2">
+          <i class="fas fa-paperclip mr-2"></i>Csatolmányok:
+        </label>
+        <input 
+          type="file" 
+          id="attachments" 
+          name="attachments" 
+          multiple
+          accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
+          class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/20 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600 cursor-pointer"
+        >
+        <div id="attachmentsList" class="mt-2"></div>
+      </div>
+
+      <!-- Body field -->
+      <div class="mb-6">
+        <label for="body" class="block text-sm font-medium mb-2">
+          <i class="fas fa-align-left mr-2"></i>Üzenet:
+        </label>
+        <textarea 
+          id="body" 
+          name="body" 
+          rows="12" 
+          required
+          class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm"
+          placeholder="Írj üzenetet..."
+        ><% if (replyTo) { %>
+
+------- Eredeti üzenet -------
+Feladó: <%= replyTo.from %>
+Dátum: <%= replyTo.date %>
+Tárgy: <%= replyTo.subject %>
+
+<%= replyTo.textBody %><% } else if (forward) { %>
+
+------- Továbbított üzenet -------
+Feladó: <%= forward.from %>
+Dátum: <%= forward.date %>
+Tárgy: <%= forward.subject %>
+
+<%= forward.textBody %><% } %></textarea>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex gap-3">
+        <button 
+          type="submit" 
+          class="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 px-8 py-3 rounded-xl font-semibold transition transform hover:scale-105 shadow-lg"
+        >
+          <i class="fas fa-paper-plane mr-2"></i>Küldés
+        </button>
+        <a 
+          href="/inbox" 
+          class="bg-white/10 hover:bg-white/20 px-8 py-3 rounded-xl font-semibold transition border border-white/20"
+        >
+          <i class="fas fa-times mr-2"></i>Mégse
+        </a>
+      </div>
+    </form>
+  </div>
+</main>
+
+<footer class="backdrop-blur-md bg-white/5 border-t border-white/10 text-center p-3">
+  <p class="text-gray-400 text-sm">©2025 Magyar Osu Mapek Email | Made by Pandor</p>
+</footer>
+
+<!-- Mobile Bottom Navigation -->
+<nav class="mobile-bottom-nav">
+  <a href="/inbox">
+    <i class="fas fa-inbox"></i>
+    <span>Inbox</span>
+  </a>
+  <a href="/compose" class="active">
+    <i class="fas fa-pen"></i>
+    <span>Írás</span>
+  </a>
+  <a href="/sent">
+    <i class="fas fa-paper-plane"></i>
+    <span>Elküldött</span>
+  </a>
+  <a href="/logout">
+    <i class="fas fa-sign-out-alt"></i>
+    <span>Kilépés</span>
+  </a>
+</nav>
+
+<script>
+  // Theme management
+  function setTheme(theme) {
+    document.body.className = `theme-${theme} text-white font-sans min-h-screen flex flex-col transition-colors duration-500`;
+    localStorage.setItem("osuTheme", theme);
+  }
+  themeSelector.addEventListener("change", e => setTheme(e.target.value));
+  const savedTheme = localStorage.getItem("osuTheme") || "blue";
+  themeSelector.value = savedTheme;
+  setTheme(savedTheme);
+
+  // Formatting functions
+  function formatText(type) {
+    const textarea = document.getElementById('body');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+    let formattedText = selectedText;
+
+    switch(type) {
+      case 'bold':
+        formattedText = `**${selectedText}**`;
+        break;
+      case 'italic':
+        formattedText = `*${selectedText}*`;
+        break;
+      case 'underline':
+        formattedText = `<u>${selectedText}</u>`;
+        break;
+      case 'link':
+        const url = prompt('Add meg a linket:');
+        if (url) formattedText = `[${selectedText || url}](${url})`;
+        break;
+      case 'list':
+        if (selectedText.includes('\n')) {
+          // Multi-line selection - make each line a list item
+          formattedText = selectedText.split('\n').map(line => line.trim() ? `- ${line}` : line).join('\n');
+        } else {
+          formattedText = `- ${selectedText}`;
+        }
+        break;
+      case 'code':
+        formattedText = `\`${selectedText}\``;
+        break;
+    }
+
+    // Insert formatted text
+    textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+    textarea.focus();
+    
+    // Set cursor position after formatted text
+    const newCursorPos = start + formattedText.length;
+    textarea.setSelectionRange(newCursorPos, newCursorPos);
+  }
+
+  // File attachments preview
+  document.getElementById('attachments').addEventListener('change', function(e) {
+    const list = document.getElementById('attachmentsList');
+    list.innerHTML = '';
+    
+    Array.from(e.target.files).forEach(file => {
+      const item = document.createElement('div');
+      item.className = 'bg-white/5 px-4 py-2 rounded-lg border border-white/10 inline-flex items-center gap-2 mr-2 mt-2';
+      item.innerHTML = `
+        <i class="fas fa-file"></i>
+        <span>${file.name}</span>
+        <span class="text-xs text-gray-400">(${(file.size / 1024).toFixed(1)} KB)</span>
+      `;
+      list.appendChild(item);
+    });
+  });
+</script>
+
+</body>
+</html>

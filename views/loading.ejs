@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="/assets/logo.png">
+  <title>Betöltés - Magyar Osu Mapek Email</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body.theme-blue { background: linear-gradient(to right, #111827, #0f172a, #000); }
+    body.theme-green { background: linear-gradient(to right, #064e3b, #065f46, #000); }
+    body.theme-purple { background: linear-gradient(to right, #3b0764, #581c87, #000); }
+    body.theme-pink { background: linear-gradient(to right, #831843, #9d174d, #000); }
+    body.theme-orange { background: linear-gradient(to right, #7c2d12, #9a3412, #000); }
+
+    .particle {
+      position: fixed;
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: float 6s infinite linear;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+      }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% {
+        transform: translateY(-100px) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    .bg-orb {
+      position: fixed;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+      animation: rotate 20s linear infinite;
+      pointer-events: none;
+    }
+
+    .bg-orb:nth-child(2) {
+      width: 150px;
+      height: 150px;
+      animation-duration: 15s;
+      animation-direction: reverse;
+      top: 20%;
+      right: 10%;
+    }
+
+    .bg-orb:nth-child(3) {
+      width: 100px;
+      height: 100px;
+      animation-duration: 25s;
+      bottom: 20%;
+      left: 15%;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .loader-step {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeInUp 0.6s ease forwards;
+    }
+
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-left-color: #3b82f6;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #06b6d4);
+      width: 0%;
+      transition: width 0.5s ease;
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+    }
+  </style>
+</head>
+<body class="theme-blue text-white font-sans min-h-screen flex items-center justify-center">
+
+<div class="bg-orb" style="top: 10%; left: 5%;"></div>
+<div class="bg-orb"></div>
+<div class="bg-orb"></div>
+<div id="particles-container"></div>
+
+<div class="max-w-2xl w-full mx-auto p-8">
+  <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-2xl p-12">
+    <div class="text-center mb-8">
+      <img src="/assets/logo.png" alt="Logo" class="w-20 h-20 rounded-full mx-auto mb-4 animate-pulse">
+      <h1 class="text-4xl font-extrabold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent mb-2">
+        Magyar Osu Mapek Email
+      </h1>
+      <p class="text-gray-400">Postafiók betöltése...</p>
+    </div>
+
+    <div class="space-y-6">
+      <!-- Step 1 -->
+      <div class="loader-step flex items-center space-x-4" style="animation-delay: 0.2s">
+        <div class="spinner flex-shrink-0"></div>
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold text-blue-400">Bejelentkezési adatok ellenőrzése...</h3>
+          <p class="text-sm text-gray-400">IMAP kapcsolat létrehozása</p>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="loader-step flex items-center space-x-4" style="animation-delay: 1s">
+        <div class="spinner flex-shrink-0"></div>
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold text-cyan-400">Adatok szinkronizálása...</h3>
+          <p class="text-sm text-gray-400">Emailek lekérdezése a szerverről</p>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="loader-step flex items-center space-x-4" style="animation-delay: 1.8s">
+        <div class="spinner flex-shrink-0"></div>
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold text-green-400"><%= displayEmail %> postafiók betöltése...</h3>
+          <p class="text-sm text-gray-400">Inbox előkészítése</p>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-bar loader-step" style="animation-delay: 2.4s">
+        <div class="progress-fill" id="progressBar"></div>
+      </div>
+    </div>
+
+    <p class="text-center text-gray-500 text-sm mt-8">
+      <i class="fas fa-shield-alt mr-2"></i>Biztonságos kapcsolat
+    </p>
+  </div>
+</div>
+
+<script>
+  // Particles
+  const container = document.getElementById('particles-container');
+  for (let i = 0; i < 30; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+    particle.style.left = Math.random() * 100 + '%';
+    particle.style.animationDelay = Math.random() * 6 + 's';
+    container.appendChild(particle);
+  }
+
+  // Progress bar
+  let progress = 0;
+  const progressBar = document.getElementById('progressBar');
+  const interval = setInterval(() => {
+    progress += Math.random() * 15;
+    if (progress >= 100) {
+      progress = 100;
+      clearInterval(interval);
+      setTimeout(() => {
+        window.location.href = '/inbox';
+      }, 500);
+    }
+    progressBar.style.width = progress + '%';
+  }, 300);
+
+  // Theme
+  const savedTheme = localStorage.getItem("osuTheme") || "blue";
+  document.body.className = `theme-${savedTheme} text-white font-sans min-h-screen flex items-center justify-center`;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,303 @@
+const express = require('express');
+const session = require('express-session');
+const flash = require('connect-flash');
+const path = require('path');
+const Imap = require('imap');
+const { simpleParser } = require('mailparser');
+const nodemailer = require('nodemailer');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Custom domain to Gmail mapping
+const DOMAIN_MAPPING = {
+  'barnix@magyarosumapek.hu': 'barnix.magyarosumapek@gmail.com',
+  'pandor@magyarosumapek.hu': 'pandor.magyarosumapek@gmail.com',
+  // Add more mappings here
+};
+
+// Reverse mapping for display
+const GMAIL_TO_DOMAIN = {};
+Object.keys(DOMAIN_MAPPING).forEach(domain => {
+  GMAIL_TO_DOMAIN[DOMAIN_MAPPING[domain]] = domain;
+});
+
+function getGmailAddress(customEmail) {
+  return DOMAIN_MAPPING[customEmail.toLowerCase()] || customEmail;
+}
+
+function getDisplayEmail(gmailAddress) {
+  return GMAIL_TO_DOMAIN[gmailAddress.toLowerCase()] || gmailAddress;
+}
+
+// Middleware
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: process.env.NODE_ENV === 'production' }
+}));
+
+app.use(flash());
+
+// Make flash messages available in all views
+app.use((req, res, next) => {
+  res.locals.messages = req.flash();
+  res.locals.user = req.session.user;
+  next();
+});
+
+// Helper: Connect to IMAP
+function connectIMAP(email, password) {
+  return new Promise((resolve, reject) => {
+    const imap = new Imap({
+      user: email,
+      password: password,
+      host: 'imap.gmail.com',
+      port: 993,
+      tls: true,
+      tlsOptions: { rejectUnauthorized: false }
+    });
+
+    imap.once('ready', () => resolve(imap));
+    imap.once('error', (err) => reject(err));
+    imap.connect();
+  });
+}
+
+// Helper: Fetch emails from INBOX
+async function fetchEmails(email, password, limit = 50) {
+  const imap = await connectIMAP(email, password);
+  
+  return new Promise((resolve, reject) => {
+    imap.openBox('INBOX', true, (err, box) => {
+      if (err) {
+        imap.end();
+        return reject(err);
+      }
+
+      const total = box.messages.total;
+      if (total === 0) {
+        imap.end();
+        return resolve([]);
+      }
+
+      const start = Math.max(1, total - limit + 1);
+      const fetch = imap.seq.fetch(`${start}:${total}`, {
+        bodies: 'HEADER.FIELDS (FROM TO SUBJECT DATE)',
+        struct: true
+      });
+
+      const messages = [];
+
+      fetch.on('message', (msg, seqno) => {
+        let uid = null;
+        msg.once('attributes', (attrs) => {
+          uid = attrs.uid;
+        });
+
+        msg.on('body', (stream) => {
+          simpleParser(stream, (err, parsed) => {
+            if (err) return;
+            messages.push({
+              uid: uid,
+              from: parsed.from ? parsed.from.text : '',
+              subject: parsed.subject || '(no subject)',
+              date: parsed.date ? parsed.date.toLocaleString() : ''
+            });
+          });
+        });
+      });
+
+      fetch.once('error', (err) => {
+        imap.end();
+        reject(err);
+      });
+
+      fetch.once('end', () => {
+        imap.end();
+        resolve(messages.reverse());
+      });
+    });
+  });
+}
+
+// Helper: Fetch single email
+async function fetchSingleEmail(email, password, uid) {
+  const imap = await connectIMAP(email, password);
+
+  return new Promise((resolve, reject) => {
+    imap.openBox('INBOX', true, (err) => {
+      if (err) {
+        imap.end();
+        return reject(err);
+      }
+
+      const fetch = imap.fetch([uid], { bodies: '' });
+      let emailData = null;
+
+      fetch.on('message', (msg) => {
+        msg.on('body', (stream) => {
+          simpleParser(stream, (err, parsed) => {
+            if (err) return reject(err);
+            emailData = {
+              from: parsed.from ? parsed.from.text : '',
+              to: parsed.to ? parsed.to.text : '',
+              subject: parsed.subject || '(no subject)',
+              date: parsed.date ? parsed.date.toLocaleString() : '',
+              body: parsed.text || parsed.html || ''
+            };
+          });
+        });
+      });
+
+      fetch.once('error', (err) => {
+        imap.end();
+        reject(err);
+      });
+
+      fetch.once('end', () => {
+        imap.end();
+        resolve(emailData);
+      });
+    });
+  });
+}
+
+// Helper: Send email via SMTP
+async function sendEmail(email, password, to, subject, body) {
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: email,
+      pass: password
+    }
+  });
+
+  await transporter.sendMail({
+    from: email,
+    to: to,
+    subject: subject,
+    text: body
+  });
+}
+
+// Routes
+app.get('/', (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  res.redirect('/inbox');
+});
+
+app.get('/login', (req, res) => {
+  res.render('login');
+});
+
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  
+  // Convert custom domain to Gmail
+  const gmailAddress = getGmailAddress(email);
+  const displayEmail = email; // Keep original for display
+  
+  try {
+    // Test IMAP connection with Gmail address
+    const imap = await connectIMAP(gmailAddress, password);
+    imap.end();
+    
+    req.session.user = { 
+      email: gmailAddress, 
+      displayEmail: displayEmail,
+      password 
+    };
+    req.flash('success', 'Sikeres bejelentkezés!');
+    res.redirect('/inbox');
+  } catch (error) {
+    req.flash('error', 'Bejelentkezés sikertelen: ' + error.message);
+    res.redirect('/login');
+  }
+});
+
+app.get('/logout', (req, res) => {
+  req.session.destroy();
+  res.redirect('/login');
+});
+
+app.get('/inbox', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+
+  try {
+    const messages = await fetchEmails(
+      req.session.user.email,
+      req.session.user.password
+    );
+    res.render('inbox', { messages });
+  } catch (error) {
+    req.flash('error', 'Nem sikerült betölteni a leveleket: ' + error.message);
+    res.render('inbox', { messages: [] });
+  }
+});
+
+app.get('/message/:uid', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+
+  try {
+    const message = await fetchSingleEmail(
+      req.session.user.email,
+      req.session.user.password,
+      req.params.uid
+    );
+    res.render('message', { message });
+  } catch (error) {
+    req.flash('error', 'Nem sikerült betölteni az üzenetet: ' + error.message);
+    res.redirect('/inbox');
+  }
+});
+
+app.get('/compose', (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  res.render('compose');
+});
+
+app.post('/send', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+
+  const { to, subject, body } = req.body;
+
+  try {
+    await sendEmail(
+      req.session.user.email,
+      req.session.user.password,
+      to,
+      subject,
+      body
+    );
+    req.flash('success', 'Üzenet sikeresen elküldve!');
+    res.redirect('/inbox');
+  } catch (error) {
+    req.flash('error', 'Küldési hiba: ' + error.message);
+    res.redirect('/compose');
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`✓ Email client running on http://localhost:${PORT}`);
+});
