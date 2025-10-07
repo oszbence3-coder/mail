@@ -503,15 +503,13 @@ async function sendEmail(email, password, to, subject, body, options = {}) {
   const displayEmail = getDisplayEmail(email);
   
   const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    service: 'gmail',
     auth: {
       user: email,
       pass: password
     },
-    connectionTimeout: 60000, // 60 seconds
-    socketTimeout: 60000     // 60 seconds
+    connectionTimeout: 120000,
+    socketTimeout: 120000
   });
 
   const mailOptions = {
